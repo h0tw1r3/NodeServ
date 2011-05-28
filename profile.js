@@ -14,7 +14,7 @@ var port = 9666;
 //var port = 80;
 
 var instance = new NodeServ({
-	bind_port: port,
+	bind: [ {host: host, port: port } ],
 	document_root: __dirname + "/profile/",
 	index_files: "index.php;index.html;index.htm;welcome.htm",
 	
