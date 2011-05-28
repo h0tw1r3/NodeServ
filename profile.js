@@ -2,7 +2,7 @@ var NodeServ = require("./lib"),
 	http = require("http"),
 	crypto = require("crypto");
 
-var requestCount = 1;
+var requestCount = 10000;
 
 var requestsDone = 0;
 var invalidResponses = 0;
@@ -14,26 +14,24 @@ var port = 9666;
 //var port = 80;
 
 var instance = new NodeServ({
-	user: "nodeserv",
-	group: "nodeserv",
 	bind_port: port,
-	document_root: "/home/nodeserv/www/",
+	document_root: __dirname + "/profile/",
 	index_files: "index.php;index.html;index.htm;welcome.htm",
 	
 	fcgi: {
 		".php": {
 			binary: "/usr/bin/php-cgi",
-			processes: 3,
+			processes: 1,
 			env: {
-				PHP_FCGI_CHILDREN: 0,
+				PHP_FCGI_CHILDREN: 3,
 				PHP_FCGI_MAX_REQUESTS: 100000
 			}
 		}
 	},
 
 	vhosts: {
-		"test.localhost": {
-			document_root: "/home/nodeserv/vhosts/test.localhost/"
+		"localhost": {
+			document_root: __dirname + "/profile/localhost"
 		}
 	}
 });
@@ -42,19 +40,18 @@ var interval = null;
 var reportProgress = function() {
 	var elapsedTime = new Date().getTime() - startTime;
 	var seconds = elapsedTime / 1000;
-	console.log("elapsed time: " + seconds + " seconds. Requests per second: " + (requestsDone / seconds) + ". Total responses: " + requestsDone + ". Invalid responses: " + invalidResponses);
+	console.log("elapsed time: " + seconds + " seconds. Requests per second: " + Math.round(requestsDone / seconds) + ". Total responses: " + requestsDone + ". Invalid responses: " + invalidResponses);
 	
 	if((requestsDone + invalidResponses) == requestCount) {
+		clearTimeout(interval);
 		instance.stop();
 	}
-	
-	clearTimeout(interval);
 };
 
 var startProfiling = function() {
 	interval = setInterval(reportProgress, 1000);
 	
-	http.getAgent(host, port).maxSockets = 500;
+	http.getAgent({host: host, port: port}).maxSockets = 500;
 	for(var i = 0; i < requestCount; i++)
 		profile();
 };
@@ -67,7 +64,6 @@ var profile = function() {
 	var req = http.request({
 		host: host,
 		port: port,
-		//port: 80,
 		path: "/profile.php?val=" + val,
 		method: "GET"
 	}, function(res) {
@@ -88,7 +84,5 @@ var profile = function() {
 	req.end();
 };
 
-instance.on("listening", function() {
-	// Yep.
-	startProfiling();
-});
+instance.start(startProfiling);
+
