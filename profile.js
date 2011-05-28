@@ -61,7 +61,7 @@ var startProfiling = function() {
 
 var profile = function() {
 	var hash = crypto.createHash("md5");
-	hash.update(new Date().getTime() + Math.random()) + "";
+	hash.update(new Date().getTime() + Math.random() + "");
 	var val = hash.digest("hex");
 
 	var req = http.request({
